@@ -1,0 +1,128 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  imageName: 'nodejssample:$(Build.BuildId)'
+  DOCKER_IMAGE: azure
+  DOCKER_TAG: $(Build.BuildNumber)
+  DOCKER_URL: "us.icr.io/dc-tools"
+  DOCKER_CREDENTIAL_ID: "dc-docker-1749"
+  INSTANA_URL: "https://cas-ibmgbs.instana.io"
+  INSTANA_CREDENTIAL_ID: "dc-instana-1749"
+  LOGDNA_URL: "https://app.logdna.com"
+  LOGDNA_CREDENTIAL_ID: "dc-logdna-1749"
+  OCP_URL: "https://c100-e.au-syd.containers.cloud.ibm.com:31995"
+  OCP_CREDENTIAL_ID: "dc-ocp-1749"
+  SONARQUBE_URL: "https://sonarqube-1749-3725.dc-ig-lib-ga-1589529604-f72ef11f3ab089a8c677044eb28292cd-0000.au-syd.containers.appdomain.cloud"
+  SONARQUBE_CREDENTIAL_ID: "dc-sonarqube-1749"
+  CLAIR_URL: "https://clair-3013-4941-clair:6060"
+  CLAIR_CREDENTIAL_ID: "dc-clair-1749"
+  NAMESPACE: "dc-dev"
+  INGRESS: "dc-ig-l"
+  componentName: readMavenPom().getArtifactId()
+  componentVersion: readMavenPom().getVersion()
+  REGISTRY_NAME: "us.icr.io/dc-tools"
+  REGISTRY_USERNAME: iamapikey
+  REGISTRY_PASSWORD: kdQcmbzIwWpFXrwuug-4Nx4qtogisKML-iGIukTXbI6o
+  POD_NAME: "nodejs_deployment"
+  KLAR_TRACE: true
+  CLAIR_OUTPUT: High
+  CLAIR_THRESHOLD: 10
+steps:
+
+- task: SonarSource.sonarqube.15B84CA1-B62F-4A2A-A403-89B77A063157.SonarQubePrepare@4
+  displayName: 'Prepare analysis on SonarQube'
+  inputs:
+    SonarQube: sonarqube
+    scannerMode: Other
+
+- task: Maven@3
+  displayName: 'Maven pom.xml'
+  inputs:
+    mavenPomFile: 'pom.xml'
+    publishJUnitResults: false
+    sonarQubeRunAnalysis: true
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(system.defaultworkingdirectory)'
+    Contents: '**/*.jar'
+    TargetFolder: 'target/app.jar'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+
+
+- task: Docker@2
+  displayName: login
+  inputs:
+    containerRegistry: registry
+    command: login
+    
+- task: Docker@2
+  displayName: buildAndPush
+  inputs:
+    repository: dc-tools/azure
+    tags: $(Build.BuildNumber)
+
+- script: | 
+    yair.py --clair ${CLAIR_URL} --registry ${REGISTRY_NAME} --username ${REGISTRY_USERNAME} --password ${REGISTRY_PASSWORD} --no-namespace ${DOCKER_IMAGE}:${DOCKER_TAG}
+    wget https://github.com/optiopay/klar/releases/download/v2.4.0/klar-2.4.0-linux-amd64
+    mv klar-2.4.0-linux-amd64 klar
+    chmod 755 klar
+    export CLAIR_ADDR=${CLAIR_URL} && export DOCKER_PASSWORD=${REGISTRY_PASSWORD} && export DOCKER_USER=${REGISTRY_USERNAME} && ./klar ${DOCKER_URL}/${DOCKER_IMAGE}:${DOCKER_TAG}
+
+- script: | 
+    wget https://github.com/optiopay/klar/releases/download/v2.4.0/klar-2.4.0-linux-amd64
+    mv klar-2.4.0-linux-amd64  klar
+    chmod 755 klar
+    export CLAIR_ADDR=${CLAIR_URL} && export DOCKER_PASSWORD=${REGISTRY_PASSWORD} && export DOCKER_USER=${REGISTRY_USERNAME}
+    CLAIR_ADDR= ${CLAIR_URL} \
+    CLAIR_OUTPUT=High \
+    CLAIR_THRESHOLD=10 \
+    DOCKER_USER= ${REGISTRY_USERNAME} \
+    DOCKER_PASSWORD= ${REGISTRY_PASSWORD} \
+    klar us.icr.io/dc-tools/azure:latest
+  continueOnError: true
+
+- task: SonarSource.sonarqube.6D01813A-9589-4B15-8491-8164AEB38055.SonarQubeAnalyze@4
+  displayName: 'Run Code Analysis'
+  continueOnError: true
+
+- task: SonarSource.sonarqube.291ed61f-1ee4-45d3-b1b0-bf822d9095ef.SonarQubePublish@4
+  displayName: 'Publish Quality Gate Result'
+  continueOnError: true
+  
+
+- script: |
+              oc login https://c100-e.us-south.containers.cloud.ibm.com:32634 --token=eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6Im1haW50ZW5hbmNlLXRva2VuLTR2YnE0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6Im1haW50ZW5hbmNlIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiNTdmNTk5MGItNjlkNy0xMWVhLThjNTgtYmVmNTg2MWE3ZWZjIiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6bWFpbnRlbmFuY2UifQ.n4F3ps5K1ULb0pPpRRtjHGuQvuKayIGEZKcYxk-4cX1u5rL40_24iIDh7hux5j6trM-_m7HV3V_zGtQQl933G_jER7WGE1sutnWEtwMCJZVZnBIp1eVkAHpFOtuRgmZE3Rx_xY5u-VRQWUmTLHgbQEO_l_FKGo8LijUIPau2FmE6AnrTuxFuNXNXmdUKvsder-kLwrBK1t1L5M5_PKx6VLYoPsgW2N4Nj8E8CCnSFFpvll7G8Ifqetxp9S48NJYcJExPSJhpgD6GGGC6c5J1JHlqgpZZZ1d9mYT7l9Vfg4osBU3Uj1Dc20KgNtw9kdAGNvPCXxJcNKDfxwwBsQkW6A
+              oc project dc-dev
+              pwd
+              ls -ltr
+              oc create secret docker-registry docker-repo-cred \
+              --docker-server=${DOCKER_URL} \
+              --docker-username=${DOCKER_USERNAME} \
+              --docker-password=${DOCKER_PASSWORD} \
+              --docker-email=${DOCKER_PASSWORD} \
+              --namespace=${NAMESPACE} || true
+
+              sed -e "s~{REGISTRY_NAME}~$DOCKER_URL~g" \
+                  -e "s~{DOCKER_IMAGE}~$DOCKER_IMAGE~g" \
+                  -e "s~{DOCKER_TAG}~$DOCKER_TAG~g" \
+                  -e "s~{K8S_DEPLOYMENT}~$K8S_DEPLOYMENT~g" \
+                       -e "s~{NAMESPACE}~$NAMESPACE~g"\
+                  -e "s~{INGRESS_URL}~$INGRESS~g" -i devops/k8s/*.yml
+              
+              oc apply -f devops/k8s/ --namespace="${NAMESPACE}" || true
+              oc create route edge --service=${K8S_DEPLOYMENT}-svc --hostname=$K8S_DEPLOYMENT.$INGRESS ||true
+              oc get route ${K8S_DEPLOYMENT}-svc || true
+              oc wait --for=condition=available --timeout=120s deployment/${K8S_DEPLOYMENT} --namespace="${NAMESPACE}" || true
