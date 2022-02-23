@@ -1,0 +1,22 @@
+name: spring app
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - name: develop
+        run: |
+            mvn clean
+            mkdir - p reports
+            
+      - name: develop
+        run: |
+            mvn compile
