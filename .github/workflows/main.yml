@@ -20,7 +20,6 @@ jobs:
       - name: sonar
         run: |
             mvn compile
-            mvn clean deploy sonar:sonar
             mvn sonar:sonar \
               -Dsonar.projectKey=actions \
               -Dsonar.host.url=https://sonarqube-1749-3725.dc-ig-lib-ga-1589529604-f72ef11f3ab089a8c677044eb28292cd-0000.au-syd.containers.appdomain.cloud \
