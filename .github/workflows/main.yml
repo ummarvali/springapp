@@ -69,3 +69,27 @@ jobs:
           no-cache: true
           pull: true
           
+      - name: openshift deploy
+        run: |
+              oc login https://c100-e.us-south.containers.cloud.ibm.com:32634 --token=eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJkZWZhdWx0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6Im1haW50ZW5hbmNlLXRva2VuLTR2YnE0Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6Im1haW50ZW5hbmNlIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiNTdmNTk5MGItNjlkNy0xMWVhLThjNTgtYmVmNTg2MWE3ZWZjIiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmRlZmF1bHQ6bWFpbnRlbmFuY2UifQ.n4F3ps5K1ULb0pPpRRtjHGuQvuKayIGEZKcYxk-4cX1u5rL40_24iIDh7hux5j6trM-_m7HV3V_zGtQQl933G_jER7WGE1sutnWEtwMCJZVZnBIp1eVkAHpFOtuRgmZE3Rx_xY5u-VRQWUmTLHgbQEO_l_FKGo8LijUIPau2FmE6AnrTuxFuNXNXmdUKvsder-kLwrBK1t1L5M5_PKx6VLYoPsgW2N4Nj8E8CCnSFFpvll7G8Ifqetxp9S48NJYcJExPSJhpgD6GGGC6c5J1JHlqgpZZZ1d9mYT7l9Vfg4osBU3Uj1Dc20KgNtw9kdAGNvPCXxJcNKDfxwwBsQkW6A
+              oc project dc-dev
+              pwd
+              ls -ltr
+              oc create secret docker-registry docker-repo-cred \
+              --docker-server=${DOCKER_URL} \
+              --docker-username=${DOCKER_USERNAME} \
+              --docker-password=${DOCKER_PASSWORD} \
+              --docker-email=${DOCKER_PASSWORD} \
+              --namespace=${NAMESPACE} || true
+              sed -e "s~{REGISTRY_NAME}~$DOCKER_URL~g" \
+                  -e "s~{DOCKER_IMAGE}~$DOCKER_IMAGE~g" \
+                  -e "s~{DOCKER_TAG}~$DOCKER_TAG~g" \
+                  -e "s~{K8S_DEPLOYMENT}~$K8S_DEPLOYMENT~g" \
+                       -e "s~{NAMESPACE}~$NAMESPACE~g"\
+                  -e "s~{INGRESS_URL}~$INGRESS~g" -i devops/k8s/*.yml
+              
+              oc apply -f devops/k8s/ --namespace="${NAMESPACE}" || true
+              oc create route edge --service=${K8S_DEPLOYMENT}-svc --hostname=$K8S_DEPLOYMENT.$INGRESS ||true
+              oc get route ${K8S_DEPLOYMENT}-svc || true
+              oc wait --for=condition=available --timeout=120s deployment/${K8S_DEPLOYMENT} --namespace="${NAMESPACE}" || true   
+          
