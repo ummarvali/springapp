@@ -20,8 +20,8 @@ jobs:
       - name: package
         run: |
            mvn package && ls -ltr
-           cd target && ls -ltr
            mv **/*.jar target/app.jar
+           cd target && ls -ltr
             
       - name: sonar
         run: |
