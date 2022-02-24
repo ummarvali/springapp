@@ -1,8 +1,5 @@
 name: spring app
 
-env:
-   componentName = readMavenPom().getArtifactId()
-   componentVersion = readMavenPom().getVersion()
 on: push
 
 jobs:
@@ -23,7 +20,7 @@ jobs:
       - name: package
         run: |
            mvn package && ls -ltr
-           mv target/${componentName}-${componentVersion}.jar target/app.jar 
+           mv target/ target/
             
       - name: sonar
         run: |
