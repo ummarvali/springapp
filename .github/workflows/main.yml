@@ -56,8 +56,8 @@ jobs:
       - name: build
         run: |
             ls -ltr
-            docker build --no-cache . -t azure/springapp:latest
-            docker push azure/springapp:latest
+            docker build --no-cache . -t dc-tools/springapp:latest
+            docker push dc-tools/springapp:latest
             
       - name: Build and push
         uses: docker/build-push-action@v2
