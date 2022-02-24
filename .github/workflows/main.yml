@@ -59,7 +59,7 @@ jobs:
             docker build --no-cache . -t dc-tools/springapp:latest
             
       - name: Docker Push
-        run: docker push dc-tools/springapp:latest
+        run: docker push us.icr.io/dc-tools/springapp:latest
       
       - name: Build and push method2
         uses: docker/build-push-action@v2
