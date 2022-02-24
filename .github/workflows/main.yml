@@ -60,14 +60,6 @@ jobs:
             
       - name: Docker Push
         run: docker push us.icr.io/dc-tools/springapp:latest
-      
-      - name: Build and push method2
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: user/app:latest
-          no-cache: true
-          pull: true
           
       - name: openshift deploy
         run: |
@@ -92,4 +84,4 @@ jobs:
               oc create route edge --service=${K8S_DEPLOYMENT}-svc --hostname=$K8S_DEPLOYMENT.$INGRESS ||true
               oc get route ${K8S_DEPLOYMENT}-svc || true
               oc wait --for=condition=available --timeout=120s deployment/${K8S_DEPLOYMENT} --namespace="${NAMESPACE}" || true   
-          
+        
