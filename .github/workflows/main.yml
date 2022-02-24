@@ -20,7 +20,7 @@ jobs:
       - name: package
         run: |
            mvn package && ls -ltr
-           mv target/ target/
+           mv **/*.jar target/app.jar
             
       - name: sonar
         run: |
