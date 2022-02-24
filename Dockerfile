@@ -3,8 +3,6 @@ USER root
 
 WORKDIR /app
 
-RUN microdnf install yum
-
 RUN yum update -y
 RUN mkdir  -p /opt/app
 RUN ls -ltr
