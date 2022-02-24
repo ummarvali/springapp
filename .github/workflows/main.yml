@@ -17,9 +17,13 @@ jobs:
             mvn clean
             mkdir - p reports
             
-      - name: develop
+      - name: sonar
         run: |
             mvn compile
+            mvn sonar:sonar \
+              -Dsonar.projectKey=actions \
+              -Dsonar.host.url=https://sonarqube-1749-3725.dc-ig-lib-ga-1589529604-f72ef11f3ab089a8c677044eb28292cd-0000.au-syd.containers.appdomain.cloud \
+              -Dsonar.login=1d36b3f65a1e157432c4b582d483db463372f7bb
 
       - name: SonarQube Scan
         uses: sonarsource/sonarqube-scan-action@master
