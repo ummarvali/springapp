@@ -59,4 +59,5 @@ jobs:
           push: true
           tags: user/app:latest
           no-cache: true
+          pull: true
           
