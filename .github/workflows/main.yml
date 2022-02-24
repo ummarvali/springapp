@@ -55,7 +55,7 @@ jobs:
       
       - name: build
         run: |
-            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            docker login us.icr.io/dc-tools -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
             docker build --no-cache . -t dc-tools/springapp:latest
             
       - name: Docker Push
