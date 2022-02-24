@@ -1,12 +1,10 @@
 FROM adoptopenjdk/openjdk8:ubi-jre
 USER root
 
-WORKDIR /app
-
 RUN yum update -y
 RUN mkdir  -p /opt/app
 RUN ls -ltr
-COPY app/target/app.jar  ./opt/app/app.jar
+COPY /target/app.jar  /opt/app/app.jar
 ENV PORT 8080
 EXPOSE 8080
 
