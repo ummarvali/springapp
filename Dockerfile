@@ -1,5 +1,6 @@
 FROM adoptopenjdk/openjdk8:ubi-jre
 RUN mkdir /opt/app
+RUN ls -ltr
 COPY target/app.jar /opt/app/app.jar
 ENV PORT 8080
 EXPOSE 8080
