@@ -16,12 +16,16 @@ jobs:
         run: |
             mvn clean
             mkdir - p reports
-            
+  package:
+    runs-on: ubuntu-latest
+  
       - name: package
         run: |
            mvn package && ls -ltr
            mv **/*.jar target/app.jar
            cd target && ls -ltr
+  sonarscan:
+    runs-on: ubuntu-latest          
             
       - name: sonar
         run: |
@@ -45,7 +49,10 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          
+       
+  docker build:
+    runs-on: ubuntu-latest     
+       
       - name: Login to DockerHub
         uses: docker/login-action@v1 
         with:
@@ -60,6 +67,9 @@ jobs:
             
       - name: Docker Push
         run: docker push us.icr.io/dc-tools/springapp:latest
+        
+  openshift deploy:
+    runs-on: ubuntu-latest     
           
       - name: openshift deploy
         run: |
